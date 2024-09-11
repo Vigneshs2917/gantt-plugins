@@ -3,7 +3,7 @@ const BUILD = /* gentt-cart */ { allRenderFn: true, appendChildSlotFix: false, a
 const Env = /* gentt-cart */ {};
 
 /*
- Stencil Client Platform v4.19.2 | MIT Licensed | https://stenciljs.com
+ Stencil Client Platform v4.21.0 | MIT Licensed | https://stenciljs.com
  */
 var __defProp = Object.defineProperty;
 var __export = (target, all) => {
@@ -589,17 +589,6 @@ var clientHydrate = (parentVNode, childRenderNodes, slotNodes, shadowRootNodes, 
         }
       }
     }
-    for (i2 = node.childNodes.length - 1; i2 >= 0; i2--) {
-      clientHydrate(
-        parentVNode,
-        childRenderNodes,
-        slotNodes,
-        shadowRootNodes,
-        hostElm,
-        node.childNodes[i2],
-        hostId
-      );
-    }
     if (node.shadowRoot) {
       for (i2 = node.shadowRoot.childNodes.length - 1; i2 >= 0; i2--) {
         clientHydrate(
@@ -612,6 +601,17 @@ var clientHydrate = (parentVNode, childRenderNodes, slotNodes, shadowRootNodes, 
           hostId
         );
       }
+    }
+    for (i2 = node.childNodes.length - 1; i2 >= 0; i2--) {
+      clientHydrate(
+        parentVNode,
+        childRenderNodes,
+        slotNodes,
+        shadowRootNodes,
+        hostElm,
+        node.childNodes[i2],
+        hostId
+      );
     }
   } else if (node.nodeType === 8 /* CommentNode */) {
     childIdSplt = node.nodeValue.split(".");
@@ -690,13 +690,13 @@ var clientHydrate = (parentVNode, childRenderNodes, slotNodes, shadowRootNodes, 
 var initializeDocumentHydrate = (node, orgLocNodes) => {
   if (node.nodeType === 1 /* ElementNode */) {
     let i2 = 0;
-    for (; i2 < node.childNodes.length; i2++) {
-      initializeDocumentHydrate(node.childNodes[i2], orgLocNodes);
-    }
     if (node.shadowRoot) {
-      for (i2 = 0; i2 < node.shadowRoot.childNodes.length; i2++) {
+      for (; i2 < node.shadowRoot.childNodes.length; i2++) {
         initializeDocumentHydrate(node.shadowRoot.childNodes[i2], orgLocNodes);
       }
+    }
+    for (i2 = 0; i2 < node.childNodes.length; i2++) {
+      initializeDocumentHydrate(node.childNodes[i2], orgLocNodes);
     }
   } else if (node.nodeType === 8 /* CommentNode */) {
     const childIdSplt = node.nodeValue.split(".");
@@ -792,10 +792,23 @@ var addStyle = (styleContainerNode, cmpMeta, mode) => {
           if (nonce != null) {
             styleElm.setAttribute("nonce", nonce);
           }
-          if (BUILD.hydrateServerSide || BUILD.hotModuleReplacement) {
+          if ((BUILD.hydrateServerSide || BUILD.hotModuleReplacement) && cmpMeta.$flags$ & 2 /* scopedCssEncapsulation */) {
             styleElm.setAttribute(HYDRATED_STYLE_ID, scopeId2);
           }
-          styleContainerNode.insertBefore(styleElm, styleContainerNode.querySelector("link"));
+          if (!(cmpMeta.$flags$ & 1 /* shadowDomEncapsulation */)) {
+            if (styleContainerNode.nodeName === "HEAD") {
+              const preconnectLinks = styleContainerNode.querySelectorAll("link[rel=preconnect]");
+              const referenceNode2 = preconnectLinks.length > 0 ? preconnectLinks[preconnectLinks.length - 1].nextSibling : document.querySelector("style");
+              styleContainerNode.insertBefore(styleElm, referenceNode2);
+            } else if ("host" in styleContainerNode) {
+              styleContainerNode.prepend(styleElm);
+            } else {
+              styleContainerNode.append(styleElm);
+            }
+          }
+          if (cmpMeta.$flags$ & 1 /* shadowDomEncapsulation */ && styleContainerNode.nodeName !== "HEAD") {
+            styleContainerNode.insertBefore(styleElm, null);
+          }
         }
         if (cmpMeta.$flags$ & 4 /* hasSlotRelocation */) {
           styleElm.innerHTML += SLOT_FB_CSS;
@@ -820,7 +833,7 @@ var attachStyles = (hostRef) => {
     cmpMeta,
     hostRef.$modeName$
   );
-  if ((BUILD.shadowDom || BUILD.scoped) && BUILD.cssAnnotations && flags & 10 /* needsScopedEncapsulation */) {
+  if ((BUILD.shadowDom || BUILD.scoped) && BUILD.cssAnnotations && flags & 10 /* needsScopedEncapsulation */ && flags & 2 /* scopedCssEncapsulation */) {
     elm["s-sc"] = scopeId2;
     elm.classList.add(scopeId2 + "-h");
     if (BUILD.scoped && flags & 2 /* scopedCssEncapsulation */) {
@@ -830,7 +843,6 @@ var attachStyles = (hostRef) => {
   endAttachStyles();
 };
 var getScopeId = (cmp, mode) => "sc-" + (BUILD.mode && mode && cmp.$flags$ & 32 /* hasMode */ ? cmp.$tagName$ + "-" + mode : cmp.$tagName$);
-var convertScopedToShadow = (css) => css.replace(/\/\*!@([^\/]+)\*\/[^\{]+\{/g, "$1{");
 var setAccessor = (elm, memberName, oldValue, newValue, isSvg, flags) => {
   if (oldValue !== newValue) {
     let isProp = isMemberInElement(elm, memberName);
@@ -894,7 +906,11 @@ var setAccessor = (elm, memberName, oldValue, newValue, isSvg, flags) => {
             if (memberName === "list") {
               isProp = false;
             } else if (oldValue == null || elm[memberName] != n) {
-              elm[memberName] = n;
+              if (typeof elm.__lookupSetter__(memberName) === "function") {
+                elm[memberName] = n;
+              } else {
+                elm.setAttribute(memberName, n);
+              }
             }
           } else {
             elm[memberName] = newValue;
@@ -1017,7 +1033,9 @@ var createElm = (oldParentVNode, newParentVNode, childIndex, parentElm) => {
     if (BUILD.vdomAttribute) {
       updateElement(null, newVNode2, isSvgMode);
     }
-    if ((BUILD.shadowDom || BUILD.scoped) && isDef(scopeId) && elm["s-si"] !== scopeId) {
+    const rootNode = elm.getRootNode();
+    const isElementWithinShadowRoot = !rootNode.querySelector("body");
+    if (!isElementWithinShadowRoot && BUILD.scoped && isDef(scopeId) && elm["s-si"] !== scopeId) {
       elm.classList.add(elm["s-si"] = scopeId);
     }
     if (BUILD.scoped) {
@@ -1231,6 +1249,15 @@ var updateChildren = (parentElm, oldCh, newVNode2, newCh, isInitialRender = fals
 var isSameVnode = (leftVNode, rightVNode, isInitialRender = false) => {
   if (leftVNode.$tag$ === rightVNode.$tag$) {
     if (BUILD.slotRelocation && leftVNode.$tag$ === "slot") {
+      if (
+        // The component gets hydrated and no VDOM has been initialized.
+        // Here the comparison can't happen as $name$ property is not set for `leftNode`.
+        "$nodeId$" in leftVNode && isInitialRender && // `leftNode` is not from type HTMLComment which would cause many
+        // hydration comments to be removed
+        leftVNode.$elm$.nodeType !== 8
+      ) {
+        return false;
+      }
       return leftVNode.$name$ === rightVNode.$name$;
     }
     if (BUILD.vdomKey && !isInitialRender) {
@@ -1272,7 +1299,10 @@ var patch = (oldVNode, newVNode2, isInitialRender = false) => {
         elm.textContent = "";
       }
       addVnodes(elm, null, newVNode2, newChildren, 0, newChildren.length - 1);
-    } else if (BUILD.updatable && oldChildren !== null) {
+    } else if (
+      // don't do this on initial render as it can cause non-hydrated content to be removed
+      !isInitialRender && BUILD.updatable && oldChildren !== null
+    ) {
       removeVnodes(oldChildren, 0, oldChildren.length - 1);
     }
     if (BUILD.svg && isSvgMode && tag === "svg") {
@@ -1964,7 +1994,8 @@ More information: https://stenciljs.com/docs/properties#prop-mutability`
           if (this.hasOwnProperty(propName)) {
             newValue = this[propName];
             delete this[propName];
-          } else if (prototype.hasOwnProperty(propName) && typeof this[propName] === "number" && this[propName] == newValue) {
+          } else if (prototype.hasOwnProperty(propName) && typeof this[propName] === "number" && // cast type to number to avoid TS compiler issues
+          this[propName] == newValue) {
             return;
           } else if (propName == null) {
             const hostRef = getHostRef(this);
@@ -2071,7 +2102,7 @@ var initializeComponent = async (elm, hostRef, cmpMeta, hmrVersionId) => {
         const endRegisterStyles = createTime("registerStyles", cmpMeta.$tagName$);
         if (!BUILD.hydrateServerSide && BUILD.shadowDom && // TODO(STENCIL-854): Remove code related to legacy shadowDomShim field
         BUILD.shadowDomShim && cmpMeta.$flags$ & 8 /* needsShadowDomShim */) {
-          style = await import('./shadow-css-964ae2c5.js').then((m) => m.scopeCss(style, scopeId2, false));
+          style = await import('./shadow-css-7ad5caf8.js').then((m) => m.scopeCss(style, scopeId2));
         }
         registerStyle(scopeId2, style, !!(cmpMeta.$flags$ & 1 /* shadowDomEncapsulation */));
         endRegisterStyles();
@@ -2631,10 +2662,8 @@ var bootstrapLazy = (lazyBundles, options = {}) => {
   const metaCharset = /* @__PURE__ */ head.querySelector("meta[charset]");
   const dataStyles = /* @__PURE__ */ doc.createElement("style");
   const deferredConnectedCallbacks = [];
-  const styles2 = /* @__PURE__ */ doc.querySelectorAll(`[${HYDRATED_STYLE_ID}]`);
   let appLoadFallback;
   let isBootstrapping = true;
-  let i2 = 0;
   Object.assign(plt, options);
   plt.$resourcesUrl$ = new URL(options.resourcesUrl || "./", doc.baseURI).href;
   if (BUILD.asyncQueue) {
@@ -2644,11 +2673,6 @@ var bootstrapLazy = (lazyBundles, options = {}) => {
   }
   if (BUILD.hydrateClientSide) {
     plt.$flags$ |= 2 /* appLoaded */;
-  }
-  if (BUILD.hydrateClientSide && BUILD.shadowDom) {
-    for (; i2 < styles2.length; i2++) {
-      registerStyle(styles2[i2].getAttribute(HYDRATED_STYLE_ID), convertScopedToShadow(styles2[i2].innerHTML), true);
-    }
   }
   let hasSlotRelocation = false;
   lazyBundles.map((lazyBundle) => {
@@ -2992,4 +3016,4 @@ var insertChildVNodeAnnotations = (doc2, vnodeChild, cmpData, hostId, depth, ind
 
 export { BUILD as B, H, NAMESPACE as N, bootstrapLazy as b, consoleDevInfo as c, doc as d, getElement as g, h, promiseResolve as p, registerInstance as r, setNonce as s };
 
-//# sourceMappingURL=index-e89631ea.js.map
+//# sourceMappingURL=index-f0d6ecfe.js.map

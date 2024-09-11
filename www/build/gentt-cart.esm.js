@@ -1,9 +1,9 @@
-import { B as BUILD, c as consoleDevInfo, H, d as doc, N as NAMESPACE, p as promiseResolve, b as bootstrapLazy } from './index-e89631ea.js';
-export { s as setNonce } from './index-e89631ea.js';
+import { B as BUILD, c as consoleDevInfo, H, d as doc, N as NAMESPACE, p as promiseResolve, b as bootstrapLazy } from './index-f0d6ecfe.js';
+export { s as setNonce } from './index-f0d6ecfe.js';
 import { g as globalScripts } from './app-globals-0f993ce5.js';
 
 /*
- Stencil Client Patch Browser v4.19.2 | MIT Licensed | https://stenciljs.com
+ Stencil Client Patch Browser v4.21.0 | MIT Licensed | https://stenciljs.com
  */
 var patchBrowser = () => {
   if (BUILD.isDev && !BUILD.isTesting) {
@@ -43,7 +43,7 @@ var patchCloneNodeFix = (HTMLElementPrototype) => {
 
 patchBrowser().then(async (options) => {
   await globalScripts();
-  return bootstrapLazy([["my-gentt",[[1,"my-gentt",{"isLoading":[32]}]]]], options);
+  return bootstrapLazy([["auto-schedule",[[1,"auto-schedule",{"isLoading":[32]}]]]], options);
 });
 
 //# sourceMappingURL=gentt-cart.esm.js.map

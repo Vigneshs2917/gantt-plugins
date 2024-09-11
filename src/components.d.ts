@@ -6,32 +6,32 @@
  */
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 export namespace Components {
-    interface MyGentt {
+    interface AutoSchedule {
     }
 }
 declare global {
-    interface HTMLMyGenttElement extends Components.MyGentt, HTMLStencilElement {
+    interface HTMLAutoScheduleElement extends Components.AutoSchedule, HTMLStencilElement {
     }
-    var HTMLMyGenttElement: {
-        prototype: HTMLMyGenttElement;
-        new (): HTMLMyGenttElement;
+    var HTMLAutoScheduleElement: {
+        prototype: HTMLAutoScheduleElement;
+        new (): HTMLAutoScheduleElement;
     };
     interface HTMLElementTagNameMap {
-        "my-gentt": HTMLMyGenttElement;
+        "auto-schedule": HTMLAutoScheduleElement;
     }
 }
 declare namespace LocalJSX {
-    interface MyGentt {
+    interface AutoSchedule {
     }
     interface IntrinsicElements {
-        "my-gentt": MyGentt;
+        "auto-schedule": AutoSchedule;
     }
 }
 export { LocalJSX as JSX };
 declare module "@stencil/core" {
     export namespace JSX {
         interface IntrinsicElements {
-            "my-gentt": LocalJSX.MyGentt & JSXBase.HTMLAttributes<HTMLMyGenttElement>;
+            "auto-schedule": LocalJSX.AutoSchedule & JSXBase.HTMLAttributes<HTMLAutoScheduleElement>;
         }
     }
 }
